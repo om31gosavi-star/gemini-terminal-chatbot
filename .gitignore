@@ -19,6 +19,12 @@ Makefile
 *.ninja
 .ninja_*
 
+# Node & Next.js artifacts
+node_modules/
+.next/
+out/
+.env*.local
+
 # IDE & Editor files
 .vscode/
 .vs/
@@ -29,6 +35,9 @@ Makefile
 
 # User/Local files
 *.json
+!package.json
+!package-lock.json
+!vercel.json
 !compile_commands.json
 *.log
 .env
