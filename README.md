@@ -1,182 +1,97 @@
-# Google Gemini C++ Terminal Chatbot
+# Google Gemini Dual-Engine Studio & C++20 Core
 
-A high-performance, object-oriented modern C++ (C++20) terminal chatbot that interfaces with the **Google Gemini API** (`v1beta`). Built with **libcurl** for HTTP communication, **nlohmann/json** for JSON parsing, and a modular architecture adhering to modern C++ best practices.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fom31gosavi-star%2Fgemini-terminal-chatbot&env=GEMINI_API_KEY&envDescription=Google%20Gemini%20API%20Key%20from%20Google%20AI%20Studio&envLink=https%3A%2F%2Faistudio.google.com%2Fapp%2Fapikey)
 
----
-
-## Architecture Overview
-
-The system is designed with strict separation of concerns, RAII resource management, const-correctness, thread safety, and an extensible exception hierarchy.
-
-```
-                  ┌────────────────────────┐
-                  │      Terminal UI       │
-                  │       (std::cin)       │
-                  └───────────┬────────────┘
-                              │
-                              ▼
-                  ┌────────────────────────┐
-                  │       ChatEngine       │ ◄── Orchestrates I/O, slash commands,
-                  │   (Controller/Loop)    │     and exception recovery
-                  └──────┬──────────┬──────┘
-                         │          │
-        Updates/Queries  │          │  Dispatches Prompts
-                         ▼          ▼
-            ┌──────────────┐     ┌──────────────┐
-            │ ChatContext  │     │  APIClient   │
-            │  (Memory)    │     │  (libcurl)   │
-            └──────────────┘     └──────┬───────┘
-                                        │ HTTP POST (SSL/TLS)
-                                        ▼
-                                ┌───────────────┐
-                                │ Gemini API    │
-                                │ (v1beta REST) │
-                                └───────────────┘
-```
-
-### Modular Components
-
-1. **`APIClient`** (`include/APIClient.h`, `src/APIClient.cpp`)
-   - Manages HTTP POST network requests to Google Gemini REST endpoints using `libcurl`.
-   - Utilizes RAII for libcurl session handles and global state initialization (`CurlGlobalInit`).
-   - Automatically utilizes the native OS certificate store on Windows (`CURLSSLOPT_NATIVE_CA`) for SSL/TLS verification.
-   - Parses incoming JSON using `nlohmann/json` and extracts candidate content or safety feedback.
-   - Supports configurable generation settings (temperature, top-p, top-k, max tokens) and custom timeout limits.
-
-2. **`ChatContext`** (`include/ChatContext.h`, `src/ChatContext.cpp`)
-   - Provides multi-turn conversational memory formatted for the Gemini API schema (`contents` array of role/part pairs).
-   - Thread-safe access protected by `std::mutex` and `std::scoped_lock`.
-   - Sliding-window history pruning (`maxTurns`) to prevent unbounded memory growth while keeping conversation flow intact.
-   - History export and import to JSON (`saveToFile`, `loadFromFile`).
-
-3. **`ChatEngine`** (`include/ChatEngine.h`, `src/ChatEngine.cpp`)
-   - The central terminal controller managing the user interaction loop.
-   - Native Windows Virtual Terminal sequence processing (`ENABLE_VIRTUAL_TERMINAL_PROCESSING`) and ANSI escape styling.
-   - Rich interactive commands: `/help`, `/clear`, `/history`, `/model`, `/system`, `/key`, `/temp`, `/stats`, `/save`, `/retry`, `/exit`.
-   - Rolls back unresponded user turns upon network/API failures to keep chat context synchronized.
-
-4. **`Exceptions`** (`include/Exceptions.h`)
-   - Polymorphic exception hierarchy rooted at `GeminiException` (`std::runtime_error`):
-     - `NetworkException`: Network connectivity failures, DNS resolution errors, and request timeouts.
-     - `ApiException`: HTTP error status codes (400, 401, 403, 429, 500), API key validation, and rate limit detection.
-     - `JsonParseException`: Malformed JSON or schema mismatches.
-     - `ConfigurationException`: Missing or invalid setup options.
+A full-stack intelligent conversational AI platform powered by **Google Gemini API** (`v1beta`). Features a modern **Next.js 15 Web Studio** designed for production deployment on **Vercel**, backed by a strict **Object-Oriented C++20 terminal engine** with RAII `libcurl` transports.
 
 ---
 
-## Directory Structure
+## Live Web Application Pages
 
-```
-c:/omchatbot/
-├── CMakeLists.txt              # Modern CMake build configuration (C++20)
-├── README.md                   # Documentation and usage guide
-├── include/
-│   ├── Exceptions.h            # Custom exception hierarchy
-│   ├── APIClient.h             # Gemini API communication interface
-│   ├── ChatContext.h           # Conversation history and memory manager
-│   └── ChatEngine.h            # Interactive terminal controller
-└── src/
-    ├── APIClient.cpp           # libcurl HTTP client implementation
-    ├── ChatContext.cpp         # Conversation history management
-    ├── ChatEngine.cpp          # CLI loop, commands, and error handling
-    └── main.cpp                # CLI entry point and environment loader
+The full-stack web studio features four pages built with Next.js 15 App Router:
+
+1. **Home / Showcase (`/`)**
+   - High-impact glassmorphic dark design with dual-engine highlights.
+   - Quick prompt starter chips that jump directly into the chat session.
+   - Core architectural feature breakdowns.
+
+2. **Interactive Chat Studio (`/chat`)**
+   - **Model Selector**: Switch on-the-fly between `Gemini 2.5 Flash`, `Gemini 1.5 Pro`, and `Gemini 1.5 Flash`.
+   - **System Persona Customization**: Preset personas (Helpful Assistant, Senior C++ Architect, Concise Terminal Bot, Creative Brainstormer) or custom prompts.
+   - **Controls & Memory**: Fine-grained temperature slider, real-time roundtrip latency (ms), token metrics, and export chat to JSON.
+   - **Fault-Tolerant Feedback**: Friendly diagnostic alerts and automatic message rollbacks for invalid keys, rate limits, or timeouts.
+   - **Client-Side Key Management**: Securely input your own Gemini API key saved to browser `localStorage` only.
+
+3. **OOP Architecture Explorer (`/architecture`)**
+   - Interactive class explorer detailing `gemini::APIClient`, `gemini::ChatContext`, `gemini::ChatEngine`, and `gemini::Exceptions`.
+   - Design patterns breakdown (RAII, Singleton, Move Semantics, Windows Native CA Store, Granular Exception Tree).
+   - Embedded C++ header and interface snippets with one-click copy.
+
+4. **Model Telemetry & Benchmarks (`/benchmarks`)**
+   - Comparative model performance matrix (latency, context window, throughput, pricing tiers).
+   - **Live Latency Ping Test**: Real-time roundtrip measurement testing browser to Vercel to Gemini API connectivity.
+
+---
+
+## 1-Click Hosting on Vercel
+
+### Option 1: Direct Vercel Import (Recommended)
+
+1. Open **[vercel.com/new](https://vercel.com/new)**.
+2. Under **"Import Git Repository"**, select **`om31gosavi-star/gemini-terminal-chatbot`**.
+3. Under **"Environment Variables"**, add:
+   - **Name**: `GEMINI_API_KEY`
+   - **Value**: Your Google Gemini API Key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+4. Click **Deploy**. Vercel will automatically detect Next.js 15, build the application, and assign a live production URL (e.g. `https://gemini-terminal-chatbot.vercel.app`).
+
+### Option 2: 1-Click Deploy Button
+
+Click the badge below to clone and deploy automatically:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fom31gosavi-star%2Fgemini-terminal-chatbot&env=GEMINI_API_KEY&envDescription=Google%20Gemini%20API%20Key%20from%20Google%20AI%20Studio&envLink=https%3A%2F%2Faistudio.google.com%2Fapp%2Fapikey)
+
+---
+
+## Local Web Development
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run local development server
+npm run dev
+
+# 3. Open in browser
+# Navigate to http://localhost:3000
 ```
 
 ---
 
-## Prerequisites & Dependencies
+## C++20 Native Engine
 
-- **C++ Compiler**: GCC 11+, Clang 13+, or MSVC 2019+ (with C++20 support).
-- **CMake**: Version 3.20 or newer.
-- **libcurl**: HTTP library with SSL/TLS support.
-- **nlohmann/json**: (Automatically downloaded via CMake `FetchContent` if not installed locally).
+Alongside the web application, the repository houses the high-performance native C++20 terminal engine:
 
----
+### C++ Modular Class Structure
 
-## Building the Project
+- **`APIClient`** ([`include/APIClient.h`](include/APIClient.h), [`src/APIClient.cpp`](src/APIClient.cpp)): Manages libcurl HTTP POST requests with Windows Native CA Store (`CURLSSLOPT_NATIVE_CA`) and JSON parsing via `nlohmann/json`.
+- **`ChatContext`** ([`include/ChatContext.h`](include/ChatContext.h), [`src/ChatContext.cpp`](src/ChatContext.cpp)): Thread-safe conversation history with sliding-window turn pruning.
+- **`ChatEngine`** ([`include/ChatEngine.h`](include/ChatEngine.h), [`src/ChatEngine.cpp`](src/ChatEngine.cpp)): Terminal I/O loop, slash commands (`/help`, `/clear`, `/history`, `/model`, `/stats`, `/save`), and exception recovery.
+- **`Exceptions`** ([`include/Exceptions.h`](include/Exceptions.h)): Custom polymorphic exception hierarchy (`NetworkException`, `ApiException`, `JsonParseException`, `ConfigurationException`).
 
-### Windows (MSYS2 / UCRT64 or MinGW)
+### Building and Running the C++ Binary
 
 ```powershell
-# 1. Configure CMake with Ninja
+# Configure and build
 cmake -B build -G "Ninja"
-
-# 2. Compile the executable
 cmake --build build
+
+# Set API key and execute
+$env:GEMINI_API_KEY = "your-api-key"
+.\build\bin\gemini_chat.exe --model gemini-2.5-flash
 ```
-
-### Linux (Ubuntu/Debian)
-
-```bash
-# Install dependencies
-sudo apt-get update
-sudo apt-get install -y build-essential cmake libcurl4-openssl-dev nlohmann-json3-dev
-
-# Build
-cmake -B build
-cmake --build build -j$(nproc)
-```
-
-### macOS (Homebrew)
-
-```bash
-brew install cmake curl nlohmann-json
-cmake -B build
-cmake --build build
-```
-
-The resulting binary will be located in `build/bin/gemini_chat` (or `build/bin/gemini_chat.exe` on Windows).
 
 ---
 
-## Running the Chatbot
+## License
 
-### 1. Set your Gemini API Key
-
-You can obtain an API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-
-Set it as an environment variable:
-```powershell
-# Windows PowerShell
-$env:GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere"
-
-# Linux / macOS
-export GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere"
-```
-
-Or pass it via the command-line flag `--key`:
-```powershell
-.\build\bin\gemini_chat.exe --key "AIzaSyYourGeminiApiKeyHere"
-```
-
-If neither is provided, the chatbot will interactively prompt you for the key at startup.
-
-### 2. Command-Line Options
-
-```
-Options:
-  -k, --key <api_key>      Google Gemini API Key (or set GEMINI_API_KEY env var)
-  -m, --model <name>       Gemini model name (default: gemini-2.5-flash)
-  -s, --system <prompt>    System instruction / persona prompt
-  -t, --timeout <seconds>  Network request timeout in seconds (default: 30)
-  --max-turns <count>      Maximum conversation turns kept in memory (default: 50)
-  -h, --help               Display help message
-```
-
-### 3. Interactive Terminal Commands
-
-While inside the chat session, you can use the following commands:
-
-| Command | Description |
-|---|---|
-| `/help` | Display list of commands |
-| `/clear` or `/reset` | Clear conversation memory |
-| `/history` | Print the full conversation history |
-| `/model <name>` | Display or switch active model (e.g. `gemini-1.5-pro`) |
-| `/system <prompt>` | View or update system guidelines / persona |
-| `/key <api_key>` | Update the Gemini API key at runtime |
-| `/temp <0.0 - 2.0>` | Adjust generation temperature |
-| `/stats` | View session uptime and turn counts |
-| `/save <file.json>` | Export conversation history to disk |
-| `/retry` | Resend the last prompt |
-| `/exit` or `/quit` | Exit the application |
+MIT License. Open-source and free to use.
